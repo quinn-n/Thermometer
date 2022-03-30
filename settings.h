@@ -3,14 +3,15 @@
 #define SETTINGS_H
 
 #include <EEPROMWearLevel.h>
+#include <RTClib.h>
 
 /*
 EEPROM section layout
 0 - Mode setting (Off / Cool / Heat / Fan)
-1 - Complex / Simple Temperature setting
-2 - Simple temperature setting
-3 - Number of complex temperatures
-4 - 63 - Complex temperature settings
+1 - Complex/Simple temperature mode setting
+2, 3 - Simple temperature setting
+4 - Number of complex temperatures
+5 - 63 - Complex temperature settings
 */
 
 // EEPROMwl config
@@ -20,17 +21,18 @@ EEPROM section layout
 #define MODE_IDX 0
 #define TEMP_MODE 1
 #define SIMPLE_TEMP_IDX 2
-#define N_CMPLX_TEMPS_IDX 3
-#define CMPLX_START_IDX 4
+#define N_CMPLX_TEMPS_IDX SIMPLE_TEMP_IDX + sizeof(TempSetting)
+#define CMPLX_START_IDX N_CMPLX_TEMPS_IDX + 1
 
-// number of indexes - number of reserved indexes
-#define MAX_CMPLX_TEMPS N_INDEXES - 5
+// number of indexes - total size of reserved indexes
+#define MAX_CMPLX_TEMPS N_INDEXES - 6
 
 // setting constants
 #define MODE_OFF 0
 #define MODE_HEAT 1
 #define MODE_COOL 2
 #define MODE_FAN 3
+#define MODE_AUTO 4
 
 #define MODE_SIMPLE 0
 #define MODE_CMPLX 1
@@ -73,17 +75,12 @@ class TempSetting {
     // NOTE: First 7 bits are the main temperature
     // The MSB is the half degree
     float decompress_target_temp(byte temp) {
-        float n = temp & 0b11111110;
-        if (temp & 0b00000001) {
-            n += .5;
-        }
+        float n = (float) temp;
+        n /= 2;
         return n;
     }
     byte compress_target_temp(float temp) {
-        byte b = floor(temp);
-        if (fmod(temp, .5) == .5) {
-            b |= 0b00000001;
-        }
+        byte b = round(temp * 2);
         return b;
     }
 };
@@ -92,7 +89,7 @@ class Settings {
     public:
     byte mode;
     byte temp_mode;
-    byte simple_temp_setting;
+    TempSetting simple_temp_setting;
 
     Settings() {
         settings_lock = true;
@@ -104,6 +101,7 @@ class Settings {
     }
     void begin() {
         /*
+        NOTE: Settings have to be initialized before they can be used anywhere else
         TODO: Make this only run once (?)
 
         maybe it doesn't matter if EEPROMwl is initialized multiple
@@ -113,7 +111,7 @@ class Settings {
         // Read settings from EEPROM
         mode = EEPROMwl.read(MODE_IDX);
         temp_mode = EEPROMwl.read(TEMP_MODE);
-        simple_temp_setting = EEPROMwl.read(SIMPLE_TEMP_IDX);
+        EEPROMwl.get(SIMPLE_TEMP_IDX, simple_temp_setting);
         n_temp_settings = EEPROMwl.read(N_CMPLX_TEMPS_IDX);
         _temp_settings = new TempSetting[MAX_CMPLX_TEMPS];
         for (int offset = 0; offset < n_temp_settings; offset++) {
@@ -128,8 +126,19 @@ class Settings {
     NOTE: Don't forget to make it include the last setting from
     the previous day somehow
     */
-    TempSetting* get_current_setting() {
-        TempSetting* most_recent_setting = &_temp_settings[0];
+    TempSetting* get_current_setting(DateTime* time) {
+        if (temp_mode == MODE_SIMPLE || time == NULL) {
+            return &simple_temp_setting;
+        }
+        int current_second = 60 * (time->minute() + time->hour() * 60);
+        // Search all the temp settings for the current day
+        for (byte i = 0; i < n_temp_settings; i++) {
+            if (_temp_settings[i].start_time() <= current_second) {
+                return &_temp_settings[i];
+            }
+        }
+        // Return the temp setting for the end of yesterday if no settings are found
+        return &_temp_settings[n_temp_settings - 1];
     }
 
     // Private attribute access
@@ -142,7 +151,7 @@ class Settings {
     void write_settings() {
         EEPROMwl.update(MODE_IDX, mode);
         EEPROMwl.update(TEMP_MODE, temp_mode);
-        EEPROMwl.update(SIMPLE_TEMP_IDX, simple_temp_setting);
+        EEPROMwl.put(SIMPLE_TEMP_IDX, simple_temp_setting);
         EEPROMwl.put(N_CMPLX_TEMPS_IDX, n_temp_settings);
         for (int offset = 0; offset < n_temp_settings; offset++) {
             EEPROMwl.put(CMPLX_START_IDX, _temp_settings[offset]);
