@@ -19,7 +19,7 @@ EEPROM section layout
 
 // EEPROM layout
 #define MODE_IDX 0
-#define TEMP_MODE 1
+#define CONTROL_MODE 1
 #define SIMPLE_TEMP_IDX 2
 #define N_CMPLX_TEMPS_IDX SIMPLE_TEMP_IDX + sizeof(TempSetting)
 #define CMPLX_START_IDX N_CMPLX_TEMPS_IDX + 1
@@ -28,11 +28,13 @@ EEPROM section layout
 #define MAX_CMPLX_TEMPS N_INDEXES - 6
 
 // setting constants
-#define MODE_OFF 0
-#define MODE_HEAT 1
-#define MODE_COOL 2
-#define MODE_FAN 3
-#define MODE_AUTO 4
+enum Mode {
+    Off = 0,
+    Heat = 1,
+    Cool = 2,
+    Fan = 3,
+    Auto = 4
+};
 
 #define MODE_SIMPLE 0
 #define MODE_CMPLX 1
@@ -72,8 +74,6 @@ class TempSetting {
     byte _target_temp;
     int _start_time;
 
-    // NOTE: First 7 bits are the main temperature
-    // The MSB is the half degree
     float decompress_target_temp(byte temp) {
         float n = (float) temp;
         n /= 2;
@@ -87,8 +87,8 @@ class TempSetting {
 
 class Settings {
     public:
-    byte mode;
-    byte temp_mode;
+    Mode mode;
+    byte control_mode;
     TempSetting simple_temp_setting;
 
     Settings() {
@@ -109,8 +109,9 @@ class Settings {
         */
         EEPROMwl.begin(0, N_INDEXES);
         // Read settings from EEPROM
-        mode = EEPROMwl.read(MODE_IDX);
-        temp_mode = EEPROMwl.read(TEMP_MODE);
+        Mode mode;
+        EEPROMwl.get(MODE_IDX, mode);
+        control_mode = EEPROMwl.read(CONTROL_MODE);
         EEPROMwl.get(SIMPLE_TEMP_IDX, simple_temp_setting);
         n_temp_settings = EEPROMwl.read(N_CMPLX_TEMPS_IDX);
         _temp_settings = new TempSetting[MAX_CMPLX_TEMPS];
@@ -127,7 +128,7 @@ class Settings {
     the previous day somehow
     */
     TempSetting* get_current_setting(DateTime* time) {
-        if (temp_mode == MODE_SIMPLE || time == NULL) {
+        if (control_mode == MODE_SIMPLE || time == NULL) {
             return &simple_temp_setting;
         }
         int current_second = 60 * (time->minute() + time->hour() * 60);
@@ -150,7 +151,7 @@ class Settings {
     // Writes settings to EEPROM
     void write_settings() {
         EEPROMwl.update(MODE_IDX, mode);
-        EEPROMwl.update(TEMP_MODE, temp_mode);
+        EEPROMwl.update(CONTROL_MODE, control_mode);
         EEPROMwl.put(SIMPLE_TEMP_IDX, simple_temp_setting);
         EEPROMwl.put(N_CMPLX_TEMPS_IDX, n_temp_settings);
         for (int offset = 0; offset < n_temp_settings; offset++) {

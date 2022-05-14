@@ -12,13 +12,9 @@
 #define CONTROL_MODE_SIMPLE 0
 #define CONTROL_MODE_TIME 1
 
-#define MODE_OFF 0
-#define MODE_FAN 1
-#define MODE_HEAT 2
-#define MODE_COOL 3
-#define MODE_AUTO 4
 
-const char* SUB_MENUS[6] = {
+const char* SUB_MENUS[7] = {
+    "MODE",
     "CTRL MODE",
     "TIME",
     "UNITS",
@@ -27,7 +23,7 @@ const char* SUB_MENUS[6] = {
     "EDIT TGT TEMP"
 };
 
-#define N_SUB_MENUS 6
+#define N_SUB_MENUS 7
 
 class Menu {
     public:
@@ -49,11 +45,9 @@ class Menu {
         display->clear();
         DateTime now = rtc->now();
         // Print current temperature
+        // TODO: Make this flash when climate control is running
         String tempstr = String(current_temp);
         // TODO: Add custom 'degrees' symbol with `display->createChar`
-        /*
-        display->setCursor(lcd_cols / 2 - tempstr.length() / 2, 0);
-        */
         display->setCursor(4, 0);
         display->print(tempstr);
 
@@ -62,20 +56,21 @@ class Menu {
         display->print('C');
 
         // Print current mode
-        if (mode == MODE_OFF) {
+        Mode mode = settings->mode;
+        if (mode == Mode::Off) {
             display->setCursor(lcd_cols - 5, 0);
             display->print("OFF");
-        } else if (mode == MODE_FAN) {
+        } else if (mode == Mode::Fan) {
             display->setCursor(lcd_cols - 5, 0);
             display->print("FAN");
-        } else if (mode == MODE_HEAT) {
-            display->setCursor(lcd_cols - 6, 0);
+        } else if (mode == Mode::Heat) {
+            display->setCursor(lcd_cols - 4, 0);
             display->print("HEAT");
-        } else if (mode == MODE_COOL) {
-            display->setCursor(lcd_cols - 6, 0);
+        } else if (mode == Mode::Cool) {
+            display->setCursor(lcd_cols - 4, 0);
             display->print("COOL");
-        } else if (mode == MODE_AUTO) {
-            display->setCursor(lcd_cols - 6, 0);
+        } else if (mode == Mode::Auto) {
+            display->setCursor(lcd_cols - 4, 0);
             display->print("AUTO");
         }
         // Print asterisk if running
@@ -123,9 +118,9 @@ class Menu {
             return;
         }
         if (submenu == 0) {
-            menu_control_mode();
+            menu_set_mode();
         } else if (submenu == 1) {
-
+            menu_set_control_mode();
         }
 
     }
@@ -150,19 +145,33 @@ class Menu {
     RTC_DS1307* rtc;
     Keypad* keypad;
 
-    uint8_t mode;
+    void menu_set_mode() {
+        const char* smenus[5] = {
+            "OFF",
+            "HEAT",
+            "COOL",
+            "FAN",
+            "AUTO"
+        };
+        int8_t mode_int = select_submenu(smenus, 5);
+        if (mode_int == -1) {
+            return;
+        }
+        settings->mode = (Mode) mode_int;
+        Serial.println("Set mode to " + String(smenus[settings->mode]));
+    }
 
-    void menu_control_mode() {
+    void menu_set_control_mode() {
         const char* smenus[2] = {
             "SIMPLE",
             "COMPLX"
         };
-        int8_t new_mode = select_submenu(smenus, 2);
-        if (new_mode == -1) {
+        int8_t control_mode = select_submenu(smenus, 2);
+        if (control_mode == -1) {
             return;
         }
-        settings->temp_mode = new_mode;
-        Serial.println("Set temp mode to " + String(settings->temp_mode));
+        settings->control_mode = control_mode;
+        Serial.println("Set temp control mode to " + String(settings->control_mode));
         // TODO: Save new mode to EEPROM
     }
 

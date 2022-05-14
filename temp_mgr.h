@@ -29,7 +29,7 @@ class TempMgr {
         // Set the temperature mode to simple if the RTC isn't running
         TempSetting* tgt_temp;
         if (!rtc->isrunning()) {
-            settings->temp_mode = MODE_SIMPLE;
+            settings->control_mode = MODE_SIMPLE;
             tgt_temp = settings->get_current_setting(NULL);
         }
         else {
@@ -37,17 +37,17 @@ class TempMgr {
             TempSetting* tgt_temp = settings->get_current_setting(&now);
         }
 
-        if (settings->mode == MODE_OFF) {
+        if (settings->mode == Mode::Off) {
             digitalWrite(HEAT_PIN, LOW);
             digitalWrite(COOL_PIN, LOW);
             digitalWrite(FAN_PIN, LOW);
         }
-        else if (settings->mode == MODE_FAN) {
+        else if (settings->mode == Mode::Fan) {
             digitalWrite(HEAT_PIN, LOW);
             digitalWrite(COOL_PIN, LOW);
             digitalWrite(FAN_PIN, HIGH);
         }
-        else if (settings->mode == MODE_HEAT) {
+        else if (settings->mode == Mode::Heat) {
             if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
                 digitalWrite(HEAT_PIN, HIGH);
                 digitalWrite(FAN_PIN, HIGH);
@@ -58,7 +58,7 @@ class TempMgr {
             }
             digitalWrite(COOL_PIN, LOW);
         }
-        else if (settings->mode == MODE_COOL) {
+        else if (settings->mode == Mode::Cool) {
             if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
                 digitalWrite(COOL_PIN, HIGH);
                 digitalWrite(FAN_PIN, HIGH);
@@ -69,7 +69,7 @@ class TempMgr {
             }
             digitalWrite(HEAT_PIN, LOW);
         }
-        else if (settings -> mode == MODE_AUTO) {
+        else if (settings -> mode == Mode::Auto) {
             if (digitalRead(HEAT_PIN)) {
                 if (current_temp > tgt_temp->target_temp()) {
                     digitalWrite(HEAT_PIN, LOW);

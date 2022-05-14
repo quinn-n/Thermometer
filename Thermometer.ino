@@ -88,6 +88,7 @@ void loop() {
     }
     else if (key == 'M') {
         menu.run_menu();
+        update_display = true;
     }
 
     float current_temp = dht.readTemperature();
