@@ -54,6 +54,10 @@ class Menu {
         // TODO: Add custom 'degrees' symbol with `display->createChar`
         // display->write((byte) 0);
         display->print('C');
+        // Print asterisk if running
+        if (temp_mgr->is_running()) {
+            display->print('*');
+        }
 
         // Print current mode
         Mode mode = settings->mode;
@@ -72,11 +76,6 @@ class Menu {
         } else if (mode == Mode::Auto) {
             display->setCursor(lcd_cols - 4, 0);
             display->print("AUTO");
-        }
-        // Print asterisk if running
-        if (temp_mgr->is_running()) {
-            display->setCursor(lcd_cols, 0);
-            display->print('*');
         }
 
         // Print target temp
