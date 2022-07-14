@@ -70,6 +70,11 @@ class TempSetting {
         _start_time = new_time;
     }
 
+    // Returns a human-readable string representation
+    String to_string() {
+        return String(start_time()) + ": " + String(target_temp());
+    }
+
     private:
     byte _target_temp;
     int _start_time;
