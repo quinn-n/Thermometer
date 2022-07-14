@@ -34,27 +34,32 @@ class TempMgr {
         }
         else {
             DateTime now = rtc->now();
-            TempSetting* tgt_temp = settings->get_current_setting(&now);
+            tgt_temp = settings->get_current_setting(&now);
         }
 
         if (settings->mode == Mode::Off) {
             digitalWrite(HEAT_PIN, LOW);
             digitalWrite(COOL_PIN, LOW);
             digitalWrite(FAN_PIN, LOW);
+            running_mode = Mode::Off;
         }
         else if (settings->mode == Mode::Fan) {
             digitalWrite(HEAT_PIN, LOW);
             digitalWrite(COOL_PIN, LOW);
             digitalWrite(FAN_PIN, HIGH);
+            running_mode = Mode::Fan;
         }
         else if (settings->mode == Mode::Heat) {
             if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
                 digitalWrite(HEAT_PIN, HIGH);
                 digitalWrite(FAN_PIN, HIGH);
+                Serial.println("Calling for heat");
+                running_mode = Mode::Heat;
             }
             else if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
                 digitalWrite(HEAT_PIN, LOW);
                 digitalWrite(FAN_PIN, LOW);
+                running_mode = Mode::Off;
             }
             digitalWrite(COOL_PIN, LOW);
         }
@@ -62,34 +67,43 @@ class TempMgr {
             if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
                 digitalWrite(COOL_PIN, HIGH);
                 digitalWrite(FAN_PIN, HIGH);
+                running_mode = Mode::Cool;
+                Serial.println("Calling for cooling");
             }
             else if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
                 digitalWrite(COOL_PIN, LOW);
                 digitalWrite(FAN_PIN, LOW);
+                running_mode = Mode::Off;
             }
             digitalWrite(HEAT_PIN, LOW);
         }
-        else if (settings -> mode == Mode::Auto) {
-            if (digitalRead(HEAT_PIN)) {
+        else if (settings->mode == Mode::Auto) {
+            if (running_mode == Mode::Heat) {
                 if (current_temp > tgt_temp->target_temp()) {
                     digitalWrite(HEAT_PIN, LOW);
                     digitalWrite(FAN_PIN, LOW);
+                    running_mode = Mode::Off;
                 }
             }
-            if (digitalRead(COOL_PIN)) {
+            else if (running_mode == Mode::Cool) {
                 if (current_temp < tgt_temp->target_temp()) {
                     digitalWrite(COOL_PIN, LOW);
                     digitalWrite(FAN_PIN, LOW);
+                    running_mode = Mode::Off;
                 }
             }
             else {
                 if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
                     digitalWrite(HEAT_PIN, HIGH);
                     digitalWrite(FAN_PIN, HIGH);
+                    running_mode = Mode::Heat;
+                    Serial.println("auto running heat");
                 }
                 if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
                     digitalWrite(COOL_PIN, HIGH);
                     digitalWrite(FAN_PIN, HIGH);
+                    running_mode = Mode::Cool;
+                    Serial.println("Auto running cool");
                 }
             }
         }
@@ -107,12 +121,13 @@ class TempMgr {
         return true;
     }
     bool is_running() {
-        return (digitalRead(FAN_PIN) || digitalRead(COOL_PIN) || digitalRead(HEAT_PIN));
+        return running_mode != Mode::Off;
     }
     private:
     Settings* settings;
     RTC_DS1307* rtc;
     unsigned long last_called;
+    Mode running_mode;
 };
 
 #endif
