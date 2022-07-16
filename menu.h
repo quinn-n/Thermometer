@@ -9,9 +9,6 @@
 #include "settings.h"
 #include "temp_mgr.h"
 
-#define CONTROL_MODE_SIMPLE 0
-#define CONTROL_MODE_TIME 1
-
 
 const char* SUB_MENUS[7] = {
     "MODE",
@@ -161,11 +158,12 @@ class Menu {
     }
 
     void menu_set_control_mode() {
+        // NOTE: These menu entries have to match up with the `ControlMode` enum
         const char* smenus[2] = {
             "SIMPLE",
-            "COMPLX"
+            "COMPLEX"
         };
-        int8_t control_mode = select_submenu(smenus, 2);
+        ControlMode control_mode = (ControlMode) select_submenu(smenus, 2);
         if (control_mode == -1) {
             return;
         }

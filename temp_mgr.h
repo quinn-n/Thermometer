@@ -29,7 +29,7 @@ class TempMgr {
         // Set the temperature mode to simple if the RTC isn't running
         TempSetting* tgt_temp;
         if (!rtc->isrunning()) {
-            settings->control_mode = MODE_SIMPLE;
+            settings->control_mode = ControlMode::Simple;
             tgt_temp = settings->get_current_setting(NULL);
         }
         else {
