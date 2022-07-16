@@ -118,7 +118,8 @@ class Menu {
         } else if (submenu == 1) {
             menu_set_control_mode();
         }
-
+        // Write updated settings to EEPROM
+        settings->save_settings();
     }
 
     void show_error(const String& msg) {
@@ -169,7 +170,6 @@ class Menu {
         }
         settings->control_mode = control_mode;
         Serial.println("Set temp control mode to " + String(settings->control_mode));
-        // TODO: Save new mode to EEPROM
     }
 
     void menu_set_time() {
