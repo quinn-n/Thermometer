@@ -84,7 +84,7 @@ void loop() {
         update_display = true;
     }
     else if (key == 'K') {
-        settings.write_settings();
+        settings.save_settings();
     }
     else if (key == 'M') {
         menu.run_menu();

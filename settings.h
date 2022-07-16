@@ -126,6 +126,20 @@ class Settings {
         }
     }
 
+    // Saves settings to EEPROM
+    void save_settings() {
+        Serial.print("Saving settings to EEPROM... ");
+        EEPROMwl.put(MODE_IDX, mode);
+        EEPROMwl.put(CONTROL_MODE_IDX, control_mode);
+        EEPROMwl.put(SIMPLE_TEMP_IDX, simple_temp_setting);
+
+        EEPROMwl.update(N_CMPLX_TEMPS_IDX, n_temp_settings);
+        for (int offset = -1; offset < n_temp_settings; offset++) {
+            EEPROMwl.put(CMPLX_START_IDX + offset, _temp_settings[offset]);
+        }
+        Serial.println("Done!");
+    }
+
     /*
     TODO: Make this return the current temp setting
     based on the time from the rtc
@@ -152,17 +166,6 @@ class Settings {
     int8_t temp_settings(TempSetting** ts) {
         ts = &_temp_settings;
         return n_temp_settings;
-    }
-
-    // Writes settings to EEPROM
-    void write_settings() {
-        EEPROMwl.update(MODE_IDX, mode);
-        EEPROMwl.update(CONTROL_MODE_IDX, control_mode);
-        EEPROMwl.put(SIMPLE_TEMP_IDX, simple_temp_setting);
-        EEPROMwl.put(N_CMPLX_TEMPS_IDX, n_temp_settings);
-        for (int offset = 0; offset < n_temp_settings; offset++) {
-            EEPROMwl.put(CMPLX_START_IDX, _temp_settings[offset]);
-        }
     }
     private:
     int8_t n_temp_settings;
