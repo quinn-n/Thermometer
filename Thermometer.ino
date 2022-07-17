@@ -112,7 +112,4 @@ void loop() {
     if (update_display) {
         menu.print_standby(current_temp);
     }
-    /*
-    TODO: Get rid if this delay() and track the last time different methods were called
-    */
 }
