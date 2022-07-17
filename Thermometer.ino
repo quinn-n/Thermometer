@@ -92,7 +92,9 @@ void loop() {
     }
 
     float current_temp = dht.readTemperature();
-    temp_mgr.update_call_timer(current_temp);
+    if (temp_mgr.update_call_timer(current_temp)) {
+        update_display = true;
+    }
     /*
     TODO: Only update the display if it actually changes.
       - Class built on LiquidCrystal that includes a frame buffer + a hash of the last flashed frame?
