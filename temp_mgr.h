@@ -25,9 +25,11 @@ class TempMgr {
         last_called = 0;
     }
     // Updates whether the thermostat is currently calling for heat, cooling, the fan, or neither
-    void update_call(float current_temp) {
+    // Returns `true` if the call changes
+    bool update_call(float current_temp) {
         // Set the temperature mode to simple if the RTC isn't running
         TempSetting* tgt_temp;
+        Mode old_mode = running_mode;
         if (!rtc->isrunning()) {
             settings->control_mode = ControlMode::Simple;
             tgt_temp = settings->get_current_setting(NULL);
@@ -53,7 +55,6 @@ class TempMgr {
             if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
                 digitalWrite(HEAT_PIN, HIGH);
                 digitalWrite(FAN_PIN, HIGH);
-                Serial.println("Calling for heat");
                 running_mode = Mode::Heat;
             }
             else if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
@@ -68,7 +69,6 @@ class TempMgr {
                 digitalWrite(COOL_PIN, HIGH);
                 digitalWrite(FAN_PIN, HIGH);
                 running_mode = Mode::Cool;
-                Serial.println("Calling for cooling");
             }
             else if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
                 digitalWrite(COOL_PIN, LOW);
@@ -97,16 +97,16 @@ class TempMgr {
                     digitalWrite(HEAT_PIN, HIGH);
                     digitalWrite(FAN_PIN, HIGH);
                     running_mode = Mode::Heat;
-                    Serial.println("auto running heat");
                 }
                 if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
                     digitalWrite(COOL_PIN, HIGH);
                     digitalWrite(FAN_PIN, HIGH);
                     running_mode = Mode::Cool;
-                    Serial.println("Auto running cool");
                 }
             }
         }
+
+        return running_mode != old_mode;
     }
     /*
     If 2000ms has passed since the last call of update_call, calls update_call and returns true
@@ -116,9 +116,8 @@ class TempMgr {
         if (millis() - last_called < 2000) {
             return false;
         }
-        update_call(current_temp);
         last_called = millis();
-        return true;
+        return update_call(current_temp);
     }
     bool is_running() {
         return running_mode != Mode::Off;
