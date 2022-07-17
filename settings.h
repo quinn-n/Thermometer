@@ -116,7 +116,6 @@ class Settings {
         */
         EEPROMwl.begin(0, N_INDEXES);
         // Read settings from EEPROM
-        Mode mode;
         EEPROMwl.get(MODE_IDX, mode);
         EEPROMwl.get(CONTROL_MODE_IDX, control_mode);
         EEPROMwl.get(SIMPLE_TEMP_IDX, simple_temp_setting);
