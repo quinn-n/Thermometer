@@ -28,7 +28,7 @@ class TempMgr {
     // Returns `true` if the call changes
     bool update_call(float current_temp) {
         // Set the temperature mode to simple if the RTC isn't running
-        TempSetting* tgt_temp;
+        const TempSetting* tgt_temp = NULL;
         Mode old_mode = running_mode;
         if (!rtc->isrunning()) {
             settings->control_mode = ControlMode::Simple;

@@ -45,16 +45,23 @@ DateTime old_time;
 
 void setup() {
     Serial.begin(9600);
+    Serial.print(F("Got sizeof TempSetting: "));
+    Serial.println(String(sizeof(TempSetting)));
+    Serial.print(F("Got "));
+    Serial.print(String(MAX_CMPLX_TEMPS));
+    Serial.println(F(" max temp settings"));
     display.init();
     display.backlight();
-    display.println("Starting setup...");
-    display.flush();
+    display.print(F("Starting setup..."));
     dht.begin();
+    display.setCursor(0, 1);
+    display.print(F("dht"));
     rtc.begin();
+    display.print(F(", rtc"));
     settings.begin();
+    display.print(F(", settings"));
     display.clear();
-    display.println("Finshed setup");
-    display.flush();
+    display.print(F("Finshed setup"));
 }
 
 void loop() {
@@ -68,7 +75,8 @@ void loop() {
     char key = keypad.getKey();
     // TODO: Make backlight flash when a key is pressed
     if (key) {
-        Serial.println("loop() got key: " + String((char) key));
+        Serial.print(F("loop() got key: "));
+        Serial.println(key);
     }
     // TODO: Flash target temperature when it's being changed (while it differs from what's stored on eeprom?)
     if (key == 'U') {
