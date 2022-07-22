@@ -159,11 +159,8 @@ class Settings {
     }
 
     /*
-    TODO: Make this return the current temp setting
-    based on the time from the rtc
-
-    NOTE: Don't forget to make it include the last setting from
-    the previous day somehow
+    Returns the TempSetting for the current time
+    (or the simple setting if the control mode is simple OR `time` is NULL)
     */
     const TempSetting* get_current_setting(DateTime* time) {
         if (control_mode == ControlMode::Simple || time == NULL) {
