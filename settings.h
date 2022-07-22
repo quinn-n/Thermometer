@@ -170,12 +170,10 @@ class Settings {
             return &simple_temp_setting;
         }
         long current_second = (long) time->second() + 60 * ((long) time->minute() + (long) time->hour() * 60);
-        Serial.println(String(current_second));
         // Search all the temp settings for the current day
         for (int i = temp_settings.size() - 1; i >= 0; i--) {
             const TempSetting& ts = temp_settings[i];
             if (current_second >= ts.start_time()) {
-                Serial.println(ts.to_string());
                 return &ts;
             }
         }

@@ -23,10 +23,6 @@ const char* SUB_MENUS[7] = {
 
 #define N_SUB_MENUS 7
 
-arx::map<char, char> SHIFT_KEYS {
-    {'.', ':'}
-};
-
 class Menu {
     public:
     Settings* settings;
@@ -188,14 +184,9 @@ class Menu {
 
     // Sets the time for the RTC
     void menu_set_time() {
-        String time_str = user_query("Enter time:", true);
-        int split_idx = time_str.indexOf(':');
-        if (split_idx == -1) {
-            show_error(F("Invalid Time"));
-            return;
-        }
-        uint8_t hour = time_str.substring(0, split_idx).toInt();
-        uint8_t minute = time_str.substring(split_idx + 1, time_str.length()).toInt();
+        arx::pair<long, long> time_pair = user_query_time(F("Enter time:"));
+        uint8_t hour = time_pair.first;
+        uint8_t minute = time_pair.second;
         // Year, month and day are currently placeholders
         DateTime dt(2022, 18, 7, hour, minute);
         rtc->adjust(dt);
@@ -207,16 +198,14 @@ class Menu {
 
     // Adds a target temperature
     void menu_add_temp_setting() {
-        String time_str = user_query(F("Enter time:"), true);
-        int split_idx = time_str.indexOf(':');
-        if (split_idx == -1) {
-            show_error(F("Invalid Time"));
+        arx::pair<long, long> time_pair = user_query_time(F("Enter time:"));
+        if (time_pair.first == -1) {
             return;
         }
-        long hour = time_str.substring(0, split_idx).toInt();
-        long minute = time_str.substring(split_idx + 1, time_str.length()).toInt();
+        long hour = time_pair.first;
+        long minute = time_pair.second;
 
-        String temp_str = user_query(F("Enter temp.:"), false);
+        String temp_str = user_query_temperature(F("Enter temp.:"));
         float temp = temp_str.toFloat();
 
         int status = settings->add_temp_setting(temp, hour, minute);
@@ -246,17 +235,14 @@ class Menu {
             return;
         }
 
-        // TODO: Move this code block into its own function, along with `user_query_time` and `user_query_temperature`
-        String time_str = user_query(F("Enter time:"), true);
-        int split_idx = time_str.indexOf(':');
-        if (split_idx == -1) {
-            show_error(F("Invalid Time"));
+        arx::pair<long, long> time_pair = user_query_time(F("Enter time:"));
+        if (time_pair.first == -1) {
             return;
         }
-        long hour = time_str.substring(0, split_idx).toInt();
-        long minute = time_str.substring(split_idx + 1, time_str.length()).toInt();
+        long hour = time_pair.first;
+        long minute = time_pair.second;
 
-        String temp_str = user_query(F("Enter temp.:"), false);
+        String temp_str = user_query_temperature(F("Eneter temp.:"));
         float temp = temp_str.toFloat();
 
         // Delete the old temp setting and create a new one
@@ -312,48 +298,158 @@ class Menu {
         }
     }
 
-    // Queries the user for a line of input
-    String user_query(const String& query, bool shift_keys) {
-        String user_input = "";
+    // Queries the user for a temperature
+    String user_query_temperature(const String& query) {
+        display->blink_on();
+        String user_input = F("");
+
         while (true) {
-            user_query_update_display(query, user_input);
+            user_query_temperature_update_display(query, user_input);
             char key = keypad->waitForKey();
-            if (shift_keys) {
-                key = shift_key(key);
-            }
             if (key == 'B') {
                 if (user_input.length() > 0) {
                     user_input = user_input.substring(0, user_input.length() - 1);
                 } else {
-                    return "";
+                    break;
                 }
             } else if (key == 'K') {
-                return user_input;
+                break;
             } else {
                 user_input += key;
             }
         }
+
+        display->blink_off();
+        return user_input;
     }
 
-    // Updates the display when querying the user
-    void user_query_update_display(const String& query, String& user_input) {
+    // Updates the display when querying the user for a temperature input
+    void user_query_temperature_update_display(const String& query, const String& user_input) {
         // Print query
         display->clear();
         display->setCursor(lcd_cols / 2 - query.length() / 2, 0);
         display->print(query);
 
         // Print current user input
-        display->setCursor(lcd_cols / 2 - user_input.length() / 2, 1);
+        display->setCursor(lcd_cols / 2 - (user_input.length() + 1) / 2, 1);
         display->print(user_input);
+        display->print('C');
+
+        // Set cursor location for blinking
+        display->setCursor(lcd_cols / 2 + user_input.length() / 2, 1);
     }
 
-    // Returns the shifted version of a key
-    char shift_key(char k) {
-        if (SHIFT_KEYS.find(k) == SHIFT_KEYS.end()) {
-            return k;
-        } else {
-            return SHIFT_KEYS[k];
+    // Queries the user for a time input. Returns <-1, -1> if the user backs out of the query.
+    arx::pair<long, long> user_query_time(const String& query) {
+        display->blink_on();
+        String user_input = F("");
+
+        while (true) {
+            user_query_time_update_display(query, user_input);
+            char key = keypad->waitForKey();
+            if (key == 'B') {
+                if (user_input.length() > 0) {
+                    user_input = user_input.substring(0, user_input.length() - 1);
+                } else {
+                    break;
+                }
+            } else if (key == 'K') {
+                break;
+            } else {
+                if (user_query_time_is_valid_input(user_input + key)) {
+                    user_input += key;
+                }
+            }
         }
+
+        display->blink_off();
+        arx::pair<long, long> out_pair;
+        if (user_input == "") {
+            out_pair.first = -1;
+            out_pair.second = -1;
+        } else {
+            String hour_str = user_input.substring(0, 2);
+            // Add extra '0' onto `minute_str` if the user only input 1 character for the minute
+            String minute_str = user_input.substring(2, 4);
+            if (minute_str.length() < 2) {
+                minute_str += ' ';
+            }
+            out_pair.first = hour_str.toInt();
+            out_pair.second = minute_str.toInt();
+        }
+        return out_pair;
+    }
+
+    bool user_query_time_is_valid_input(const String& user_input) {
+        if (user_input.length() > 4) {
+            return false;
+        }
+        for (size_t i = 0; i < user_input.length(); i++) {
+            char c = user_input[i];
+            switch (i) {
+                case 0:
+                    if (c < '0' || c > '2') {
+                        return false;
+                    }
+                    break;
+
+                case 1:
+                    if (user_input[0] < '2') {
+                        if (c < '0' || c > '9') {
+                            return false;
+                        }
+                    } else {
+                        if (c < '0' || c > '3') {
+                            return false;
+                        }
+                    }
+                    break;
+            
+                case 2:
+                    if (c < '0' || c > '5') {
+                        return false;
+                    }
+                    break;
+                
+                case 3:
+                    if (c < '0' || c > '9') {
+                        return false;
+                    }
+                    break;
+
+                default:
+                    return false;
+                    break;
+                }
+        }
+        return true;
+    }
+
+    // Updates the display when querying the user for a time input
+    void user_query_time_update_display(const String& query, String user_input) {
+        // Print query
+        display->clear();
+        display->setCursor(lcd_cols / 2 - query.length() / 2, 0);
+        display->print(query);
+
+        size_t cursor_offset = user_input.length();
+        // Add 1 to cursor offset for ':'
+        if (cursor_offset >= 2) {
+            cursor_offset++;
+        }
+        // Pad user input
+        while (user_input.length() < 4) {
+            user_input += '_';
+        }
+        String hour_str = user_input.substring(0, 2);
+        String minute_str = user_input.substring(2, 4);
+        display->setCursor(lcd_cols / 2 - strlen("00:00") / 2, 1);
+        display->print(hour_str);
+        display->print(':');
+        display->print(minute_str);
+
+        // Set cursor location for blinking
+        display->setCursor(lcd_cols / 2 - strlen("00:00") / 2 + cursor_offset, 1);
     }
 
     // Asks the user to confirm a query
