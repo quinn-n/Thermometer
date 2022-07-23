@@ -103,13 +103,6 @@ void loop() {
     if (temp_mgr.update_call_timer(current_temp)) {
         update_display = true;
     }
-    /*
-    TODO: Only update the display if it actually changes.
-      - Class built on LiquidCrystal that includes a frame buffer + a hash of the last flashed frame?
-        - BufferedLiquidCrystal_I2C or something
-
-    Otherwise this makes the LCD flash every time it's called.
-    */
     if (current_temp != old_temp) {
         old_temp = current_temp;
         update_display = true;
