@@ -86,7 +86,19 @@ class TempSetting {
 
     // Returns a human-readable string representation
     const String to_string() const {
-        return String(start_time()) + ": " + String(target_temp());
+        long m = start_time() / 60;
+        long hour = floor(m / 60);
+        long minute = m - hour * 60;
+        String hour_str = String(hour);
+        String minute_str = String(minute);
+        // Pad hours and minutes
+        while (hour_str.length() < 2) {
+            hour_str = '0' + hour_str;
+        }
+        while (minute_str.length() < 2) {
+            minute_str = '0' + minute_str;
+        }
+        return hour_str + ':' + minute_str + ": " + String(target_temp());
     }
 
     bool operator>(const TempSetting& other) {
