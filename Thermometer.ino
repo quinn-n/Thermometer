@@ -22,8 +22,8 @@ LiquidCrystal_I2C display = LiquidCrystal_I2C(0x27, LCD_COLS, LCD_ROWS);
 
 Keypad keypad = Keypad(
     makeKeymap(KEYMAP),
-    (byte[]) {6, 5, 4, 3},
-    (byte[]) {7, 8, 9, 10},
+    (byte[]) {9, 8, 7, 6},
+    (byte[]) {13, 11, 12, 10},
     (byte) 4,
     (byte) 4
 );
