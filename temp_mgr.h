@@ -6,9 +6,9 @@
 
 #include "settings.h"
 
-#define HEAT_PIN 11
-#define COOL_PIN 12
-#define FAN_PIN 13
+#define HEAT_PIN 3
+#define COOL_PIN 4
+#define FAN_PIN 5
 
 #define TEMP_THRESHOLD 0.5
 
@@ -40,67 +40,67 @@ class TempMgr {
         }
 
         if (settings->mode == Mode::Off) {
-            digitalWrite(HEAT_PIN, LOW);
-            digitalWrite(COOL_PIN, LOW);
-            digitalWrite(FAN_PIN, LOW);
+            digitalWrite(HEAT_PIN, HIGH);
+            digitalWrite(COOL_PIN, HIGH);
+            digitalWrite(FAN_PIN, HIGH);
             running_mode = Mode::Off;
         }
         else if (settings->mode == Mode::Fan) {
-            digitalWrite(HEAT_PIN, LOW);
-            digitalWrite(COOL_PIN, LOW);
-            digitalWrite(FAN_PIN, HIGH);
+            digitalWrite(HEAT_PIN, HIGH);
+            digitalWrite(COOL_PIN, HIGH);
+            digitalWrite(FAN_PIN, LOW);
             running_mode = Mode::Fan;
         }
         else if (settings->mode == Mode::Heat) {
             if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
-                digitalWrite(HEAT_PIN, HIGH);
-                digitalWrite(FAN_PIN, HIGH);
+                digitalWrite(HEAT_PIN, LOW);
+                digitalWrite(FAN_PIN, LOW);
                 running_mode = Mode::Heat;
             }
             else if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
-                digitalWrite(HEAT_PIN, LOW);
-                digitalWrite(FAN_PIN, LOW);
+                digitalWrite(HEAT_PIN, HIGH);
+                digitalWrite(FAN_PIN, HIGH);
                 running_mode = Mode::Off;
             }
-            digitalWrite(COOL_PIN, LOW);
+            digitalWrite(COOL_PIN, HIGH);
         }
         else if (settings->mode == Mode::Cool) {
             if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
-                digitalWrite(COOL_PIN, HIGH);
-                digitalWrite(FAN_PIN, HIGH);
+                digitalWrite(COOL_PIN, LOW);
+                digitalWrite(FAN_PIN, LOW);
                 running_mode = Mode::Cool;
             }
             else if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
-                digitalWrite(COOL_PIN, LOW);
-                digitalWrite(FAN_PIN, LOW);
+                digitalWrite(COOL_PIN, HIGH);
+                digitalWrite(FAN_PIN, HIGH);
                 running_mode = Mode::Off;
             }
-            digitalWrite(HEAT_PIN, LOW);
+            digitalWrite(HEAT_PIN, HIGH);
         }
         else if (settings->mode == Mode::Auto) {
             if (running_mode == Mode::Heat) {
                 if (current_temp > tgt_temp->target_temp()) {
-                    digitalWrite(HEAT_PIN, LOW);
-                    digitalWrite(FAN_PIN, LOW);
+                    digitalWrite(HEAT_PIN, HIGH);
+                    digitalWrite(FAN_PIN, HIGH);
                     running_mode = Mode::Off;
                 }
             }
             else if (running_mode == Mode::Cool) {
                 if (current_temp < tgt_temp->target_temp()) {
-                    digitalWrite(COOL_PIN, LOW);
-                    digitalWrite(FAN_PIN, LOW);
+                    digitalWrite(COOL_PIN, HIGH);
+                    digitalWrite(FAN_PIN, HIGH);
                     running_mode = Mode::Off;
                 }
             }
             else {
                 if (current_temp < tgt_temp->target_temp() - TEMP_THRESHOLD) {
-                    digitalWrite(HEAT_PIN, HIGH);
-                    digitalWrite(FAN_PIN, HIGH);
+                    digitalWrite(HEAT_PIN, LOW);
+                    digitalWrite(FAN_PIN, LOW);
                     running_mode = Mode::Heat;
                 }
                 if (current_temp > tgt_temp->target_temp() + TEMP_THRESHOLD) {
-                    digitalWrite(COOL_PIN, HIGH);
-                    digitalWrite(FAN_PIN, HIGH);
+                    digitalWrite(COOL_PIN, LOW);
+                    digitalWrite(FAN_PIN, LOW);
                     running_mode = Mode::Cool;
                 }
             }

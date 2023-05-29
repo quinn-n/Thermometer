@@ -60,6 +60,13 @@ void setup() {
     display.print(F(", rtc"));
     settings.begin();
     display.print(F(", settings"));
+    pinMode(HEAT_PIN, OUTPUT);
+    pinMode(COOL_PIN, OUTPUT);
+    pinMode(FAN_PIN, OUTPUT);
+    digitalWrite(HEAT_PIN, HIGH);
+    digitalWrite(COOL_PIN, HIGH);
+    digitalWrite(FAN_PIN, HIGH);
+    display.print(F(", pins"));
     display.clear();
     display.print(F("Finshed setup"));
 }
